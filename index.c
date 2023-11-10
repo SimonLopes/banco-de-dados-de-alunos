@@ -49,7 +49,6 @@ struct array_dinamico {
     bool ordenado;  // true indica que quer manter o array ordenado. 
     int tamanho;    // número máximo de elementos que podemos armazenados no array.
     int quantidade; // quantidade atual de elementos armazenados
-    Aluno *dados; // quantidade atual de elementos armazenados
     Aluno **ptr_dados;     // array de int que representa nossos dados. 
 };
 typedef struct array_dinamico Array_Dinamico;
@@ -60,7 +59,6 @@ Array_Dinamico* criar_array_dinamico(int tamanho_array, bool ordenado) {
     array_dinamico->ordenado = ordenado;
     array_dinamico->quantidade = 0;
     array_dinamico->tamanho = tamanho_array;
-    array_dinamico->dados = (Aluno*) calloc(tamanho_array, sizeof(Aluno**));
     array_dinamico->ptr_dados = (Aluno**) calloc(tamanho_array, sizeof(Aluno*));
 
     return array_dinamico;
@@ -106,8 +104,13 @@ void ordenar_por_ra(Array_Dinamico *array_dinamico) {
 void destruir_array_dinamico(Array_Dinamico **array_dinamico_endereco_de_memoria) {
 
     Array_Dinamico *array_dinamico = *array_dinamico_endereco_de_memoria;
-    free(array_dinamico->dados); /// limpa os dados do array
-    free(array_dinamico);  /// limpa o array
+    
+    for (int i = 0; i < array_dinamico->quantidade; i++) {
+        free(array_dinamico->ptr_dados[0]);
+        array_dinamico->ptr_dados[0] = NULL;
+    }
+    free(array_dinamico->ptr_dados);
+    free(array_dinamico);    
     *array_dinamico_endereco_de_memoria = NULL;
 
 }
@@ -158,18 +161,6 @@ void imprimir_aluno(Array_Dinamico *array_dinamico, int index){
     printf("------------------------\n");
 }
 
-int acessar_verificado_array_dinamico(Array_Dinamico *array_dinamico, int index) { // verifica se tem elemento
-
-    if(&array_dinamico->dados[index]){
-        imprimir_aluno(array_dinamico, index);
-    }else{
-        printf("Aluno não encontrado!\n");
-    }
-    
-    return 0;
-
-}
-
 int quantidade_array_dinamico(Array_Dinamico *array_dinamico) {
     if(array_dinamico->quantidade){
         printf("Estao cadastrados %d aluno(s)!\n", array_dinamico->quantidade);
@@ -198,6 +189,8 @@ void organizar_array_dinamico(Array_Dinamico *array_dinamico, int posicao_removi
     for (int i = posicao_removida; i < array_dinamico->quantidade; i++) {
         array_dinamico->ptr_dados[i] = array_dinamico->ptr_dados[i + 1];
     }
+    // Reduzindo a quantidade de alunos
+    array_dinamico->quantidade--;
 
     printf("Array dinamico reorganizado!\n");
 }
@@ -206,14 +199,14 @@ void aumentar_array_dinamico(Array_Dinamico *array_dinamico) { // dobra o tamanh
     
     printf("Aumentando 2 vezes o tamanho atual do array( 2 * %d )\n", array_dinamico->tamanho);
 
-    Aluno *temp = array_dinamico->dados; /// Armazena dados dos alunos temporariamente
+    Aluno **temp = array_dinamico->ptr_dados; /// Armazena dados dos alunos temporariamente
 
     array_dinamico->tamanho = array_dinamico->tamanho * 2; /// dobra o tamanho do array
 
-    array_dinamico->dados = (Aluno*)calloc(array_dinamico->tamanho, sizeof(Aluno));  /// realoca espaco na memoria
+    array_dinamico->ptr_dados = (Aluno**) calloc(array_dinamico->tamanho, sizeof(Aluno*));  /// realoca espaco na memoria
 
     for (int i = 0; i < array_dinamico->tamanho; i++ ) { 
-       array_dinamico->dados[i] = temp[i]; // copia dados temporarios para o array dinamico redimensionado
+       array_dinamico->ptr_dados[i] = temp[i]; // copia dados temporarios para o array dinamico redimensionado
     }
     free(temp);  // limpa a variavel temporaria
 
@@ -226,13 +219,13 @@ void diminuir_array_dinamico(Array_Dinamico *array_dinamico) { //diminuir o tama
        
         printf("Diminuindo o tamanho atual do array pela metade ( %d / 2 )\n", array_dinamico->tamanho); 
  
-        Aluno *temp = array_dinamico->dados; 
+        Aluno **temp = array_dinamico->ptr_dados; 
         array_dinamico->tamanho /= 2;
         
-        array_dinamico->dados = (Aluno*)calloc(array_dinamico->tamanho, sizeof(Aluno**)); 
+        array_dinamico->ptr_dados = (Aluno**)calloc(array_dinamico->tamanho, sizeof(Aluno*)); 
 
         for (int j = 0; j < array_dinamico->tamanho; j++ ) { 
-            array_dinamico->dados[j] = temp[j];
+            array_dinamico->ptr_dados[j] = temp[j];
         }
         free(temp);
     }
@@ -247,7 +240,6 @@ void remover_aluno(Array_Dinamico *array_dinamico, int index){
         printf("%p \n%d\n", aluno_a_ser_removido, aluno_a_ser_removido->ra);
         free(aluno_a_ser_removido);
         aluno_a_ser_removido = NULL;
-        array_dinamico->quantidade--;
         organizar_array_dinamico(array_dinamico, index);
 
         diminuir_array_dinamico(array_dinamico);
